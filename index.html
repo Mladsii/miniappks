@@ -19,42 +19,53 @@
   <button onclick="ask()">Отправить</button>
 
   <script>
-    async function ask() {
-      const query = document.getElementById("prompt").value;
-      if (!query.trim()) return;
+  async function ask() {
+    const query = document.getElementById("prompt").value;
+    if (!query.trim()) return;
 
-      // ⚠️ ЗАМЕНИТЕ ЭТОТ URL на ваш n8n + ngrok
-      const N8N_WEBHOOK_URL = "https://n8nai-agentmmi.ru/webhook/3c9f0d22-584d-4297-b2e4-f9feaae43148";
+    const N8N_WEBHOOK_URL = "https://n8nai-agentmmi.ru/webhook/3c9f0d22-584d-4297-b2e4-f9feaae43148";
 
-      try {
-        const response = await fetch(N8N_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: query })
-        });
+    try {
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+      });
 
-        if (!response.ok) throw new Error("Ошибка сервера");
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
 
-        const data = await response.json();
+      const data = await response.json();
 
-        const minutes = Math.floor(data.start_time_sec / 60);
-        const seconds = (data.start_time_sec % 60).toString().padStart(2, '0');
-        const timeStr = `${minutes}:${seconds}`;
+      // 💡 Убедитесь, что данные пришли как ожидается
+      console.log("Полученные данные:", data);
 
-        const videoLink = `${data.video_url}#t=${data.start_time_sec}`;
+      // 🛡️ Защита от undefined/null
+      const answer = data.answer || "Извините, не удалось найти информацию.";
+      const videoUrl = (data.video_url || "").trim(); // Убираем пробелы
+      const startSec = parseInt(data.start_time_sec) || 0; // Приводим к числу
 
-        document.getElementById("chat").innerHTML += `
-          <div style="margin-top:15px; padding-top:10px; border-top:1px solid #eee">
-            <div><b>Вы:</b> ${query}</div>
-            <div style="margin-top:8px"><b>Ассистент:</b> ${data.answer}</div>
-            <div style="margin-top:8px">▶️ <a href="${videoLink}" target="_blank">Посмотреть видео с ${timeStr}</a></div>
-          </div>
-        `;
-        document.getElementById("prompt").value = "";
-      } catch (e) {
-        document.getElementById("chat").innerHTML += `<div style="color:red">Ошибка: ${e.message}</div>`;
-      }
+      // Форматируем время
+      const minutes = Math.floor(startSec / 60);
+      const seconds = (startSec % 60).toString().padStart(2, '0');
+      const timeStr = `${minutes}:${seconds}`;
+
+      // Генерируем ссылку с таймкодом
+      const videoLink = `${videoUrl}#t=${startSec}`;
+
+      // Обновляем чат
+      document.getElementById("chat").innerHTML += `
+        <div style="margin-top:15px; padding-top:10px; border-top:1px solid #eee">
+          <div><b>Вы:</b> ${query}</div>
+          <div style="margin-top:8px"><b>Ассистент:</b> ${answer}</div>
+          <div style="margin-top:8px">▶️ <a href="${videoLink}" target="_blank">Посмотреть видео с ${timeStr}</a></div>
+        </div>
+      `;
+      document.getElementById("prompt").value = "";
+    } catch (e) {
+      document.getElementById("chat").innerHTML += `<div style="color:red">Ошибка: ${e.message}</div>`;
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
