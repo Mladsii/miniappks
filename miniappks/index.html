@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1С Ассистент</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; background: #f0f0f0; }
+    #chat { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    input { width: 70%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: 12px 20px; background: #0088cc; color: white; border: none; border-radius: 8px; margin-left: 10px; }
+    a { color: #0088cc; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div id="chat">Привет! Задайте вопрос по 1С, и я покажу нужное видео.</div>
+  <input type="text" id="prompt" placeholder="Например: как создать отчёт по продажам?">
+  <button onclick="ask()">Отправить</button>
+
+  <script>
+    async function ask() {
+      const query = document.getElementById("prompt").value;
+      if (!query.trim()) return;
+
+      // ⚠️ ЗАМЕНИТЕ ЭТОТ URL на ваш n8n + ngrok
+      const N8N_WEBHOOK_URL = "https://n8nai-agentmmi.ru/webhook/3c9f0d22-584d-4297-b2e4-f9feaae43148";
+
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query })
+        });
+
+        if (!response.ok) throw new Error("Ошибка сервера");
+
+        const data = await response.json();
+
+        const minutes = Math.floor(data.start_time_sec / 60);
+        const seconds = (data.start_time_sec % 60).toString().padStart(2, '0');
+        const timeStr = `${minutes}:${seconds}`;
+
+        const videoLink = `${data.video_url}#t=${data.start_time_sec}`;
+
+        document.getElementById("chat").innerHTML += `
+          <div style="margin-top:15px; padding-top:10px; border-top:1px solid #eee">
+            <div><b>Вы:</b> ${query}</div>
+            <div style="margin-top:8px"><b>Ассистент:</b> ${data.answer}</div>
+            <div style="margin-top:8px">▶️ <a href="${videoLink}" target="_blank">Посмотреть видео с ${timeStr}</a></div>
+          </div>
+        `;
+        document.getElementById("prompt").value = "";
+      } catch (e) {
+        document.getElementById("chat").innerHTML += `<div style="color:red">Ошибка: ${e.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
