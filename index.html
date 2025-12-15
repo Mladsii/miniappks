@@ -32,27 +32,26 @@
         body: JSON.stringify({ query: query })
       });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      if (!response.ok) throw new Error("Ошибка сервера");
 
-      const data = await response.json();
+      // 🔥 ВАЖНО: обрабатываем как массив, так и объект
+      const rawData = await response.json();
+      const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
-      // 💡 Убедитесь, что данные пришли как ожидается
-      console.log("Полученные данные:", data);
-
-      // 🛡️ Защита от undefined/null
+      // Извлекаем поля с защитой от ошибок
       const answer = data.answer || "Извините, не удалось найти информацию.";
-      const videoUrl = (data.video_url || "").trim(); // Убираем пробелы
-      const startSec = parseInt(data.start_time_sec) || 0; // Приводим к числу
+      const videoUrl = (data.video_url || "").trim();
+      const startSec = parseInt(data.start_time_sec) || 0;
 
-      // Форматируем время
+      // Форматируем таймкод: 1570 → "26:10"
       const minutes = Math.floor(startSec / 60);
       const seconds = (startSec % 60).toString().padStart(2, '0');
       const timeStr = `${minutes}:${seconds}`;
 
-      // Генерируем ссылку с таймкодом
+      // Формируем ссылку с таймкодом
       const videoLink = `${videoUrl}#t=${startSec}`;
 
-      // Обновляем чат
+      // Отображаем в чате
       document.getElementById("chat").innerHTML += `
         <div style="margin-top:15px; padding-top:10px; border-top:1px solid #eee">
           <div><b>Вы:</b> ${query}</div>
