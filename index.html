@@ -142,7 +142,8 @@
       margin-bottom: 8px;
     }
 
-    .video-container video {
+    .video-container video,
+    .video-container iframe {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -509,12 +510,24 @@
       let videoHtml = '';
       const videoId = 'video-' + Date.now();
       if (videoUrl) {
-        videoHtml = `
-          <div class="video-container">
-            <video id="${videoId}" src="${esc(videoUrl)}#t=${startSec}" controls preload="metadata"></video>
-          </div>
-          <span class="timestamp-badge" onclick="seekVideo('${videoId}', ${startSec})">&#9654; Смотреть с ${esc(timeStr)}</span>
-        `;
+        const isGoogleDrive = videoUrl.includes('drive.google.com');
+        if (isGoogleDrive) {
+          // Старые видео с Google Drive — iframe (без поддержки таймкодов)
+          videoHtml = `
+            <div class="video-container">
+              <iframe src="${esc(videoUrl)}" allow="autoplay; encrypted-media" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+            </div>
+            <span class="timestamp-badge">&#9654; ${esc(timeStr)}</span>
+          `;
+        } else {
+          // Nextcloud — HTML5 video с поддержкой таймкодов
+          videoHtml = `
+            <div class="video-container">
+              <video id="${videoId}" src="${esc(videoUrl)}#t=${startSec}" controls preload="metadata"></video>
+            </div>
+            <span class="timestamp-badge" onclick="seekVideo('${videoId}', ${startSec})">&#9654; Смотреть с ${esc(timeStr)}</span>
+          `;
+        }
       } else {
         videoHtml = '<div class="no-video">Видео не найдено</div>';
       }
